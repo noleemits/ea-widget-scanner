@@ -1,90 +1,87 @@
 # EA Widget Scanner (CLI)
 
-This WP-CLI plugin scans all public posts and pages in a WordPress site to detect usage of **Essential Addons for Elementor** widgets (identified by `eael-` classes in HTML). It exports the results into a structured CSV file, including:
+Scans all public posts, pages, and custom post types for [Essential Addons for Elementor](https://essential-addons.com/elementor/) widgets. It logs usage into a CSV file using WP-CLI.
 
-- Post ID
-- Post Title
-- Post Type
-- Permalink
-- EA Widget Classes Found
-- Rendered HTML Content (text only)
+## 🔧 Installation
+1. Upload this plugin to your `wp-content/plugins/` directory.
+2. Activate it via the WordPress Admin Dashboard.
+3. Make sure WP-CLI is installed and running properly.
 
----
+## ⚙️ Usage
 
-## 📦 Installation
-
-1. Clone or copy this plugin into your WordPress site:
-   ```bash
-   wp-content/plugins/ea-widget-scanner-cli/
-   ```
-
-2. Activate the plugin:
-   ```bash
-   wp plugin activate ea-widget-scanner-cli
-   ```
-
-3. Ensure WP-CLI is installed and running properly in your environment.
-
----
-
-## 🚀 Usage
-
-### Scan for EA Widgets
+### 📊 Scan for EA Widgets
 ```bash
 wp ea scan-ea-widgets
 ```
-
-The command will:
-- Scan all published posts of public post types
-- Render content using Elementor (if available)
-- Parse for any HTML classes starting with `eael-`
-- Write results to a CSV file:
-
+Scans all posts and outputs a CSV file at:
 ```
 wp-content/uploads/eael-widget-usage.csv
 ```
 
-### Delete the CSV File
+### 🧹 Delete the CSV File
 ```bash
 wp ea delete-csv
 ```
-This will delete the previously generated CSV file.
+Removes the CSV file if it exists.
 
----
+## 🖥️ Admin UI
+You can view usage instructions and plugin status by going to:
+**WP Admin → Tools → EA Widget Scanner CLI**
 
-## 📝 Output Example
+## 🧪 Frontend Debugging Tools
 
-The CSV will include rows like:
+### 🔲 Highlight EA Widgets in the Browser
+Paste this in your browser DevTools **Console** or as a CSS Snippet (e.g. in DevTools or Customizer):
+```css
+[class^="eael"] {
+  border: 2px solid red !important;
+}
 
-| Post ID | Title     | Type  | URL                | Widgets Found           | HTML Preview         |
-|---------|-----------|-------|---------------------|--------------------------|-----------------------|
-| 101     | About Us  | page  | https://...         | eael-adv-accordion       | This is the content... |
-
----
-
-## 🛠 Development Notes
-
-- The scanner uses `Elementor\Plugin::instance()->frontend->get_builder_content_for_display()` to get accurate widget output.
-- Posts with no EA widgets are skipped from the CSV.
-- Logs are streamed to the terminal during execution.
-
----
-
-## 📁 Optional Debug
-
-To inspect the raw HTML of a specific post (e.g. ID 2441), the plugin will write a file:
-
-```
-wp-content/ea-debug-2441.html
+[class*="eael"] {
+  border: 2px solid red !important;
+}
 ```
 
+### 🔍 Log Widget Usage to Console
+Paste this into your browser's **DevTools Console** to list all EA widgets present:
+```js
+(() => {
+  const selectors = [
+    '[class*="eael-"]',
+    '[data-widget_type^="eael-"]'
+  ];
+
+  const widgets = new Map();
+
+  selectors.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      const classes = Array.from(el.classList).filter(cls => cls.startsWith('eael-'));
+      classes.forEach(cls => {
+        const existing = widgets.get(cls) || [];
+        existing.push(el);
+        widgets.set(cls, existing);
+      });
+    });
+  });
+
+  if (widgets.size === 0) {
+    console.log('No Essential Addons widgets detected on this page.');
+  } else {
+    console.log('📦 Essential Addons widgets found on this page:\n');
+    widgets.forEach((els, cls) => {
+      console.log(`- ${cls} (${els.length} time${els.length > 1 ? 's' : ''})`);
+    });
+  }
+})();
+```
+
+## 📁 Output Format
+| Post ID | Title | Post Type | URL | EA Widgets |
+|---------|-------|-----------|-----|-------------|
+
+## 🛡️ Security
+- Includes `index.php` files to block directory access
+- Does not expose or modify content; read-only scanning
+
 ---
-
-## ✅ Requirements
-- WordPress with WP-CLI access
-- Elementor and Essential Addons installed (optional, but improves results)
-
----
-
-## 🔒 Disclaimer
-This tool reads and parses post content but does not modify any data. Use it for auditing, QA, or optimization workflows.
+Created with ❤️ by Stephen Lee Hernandez
